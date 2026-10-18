@@ -9,14 +9,14 @@ interface CaptchaFieldProps {
   value: string;
   onChange: (value: string) => void;
   onCaptchaIdChange: (captchaId: string) => void;
+  onCaptchaLoaded?: (captcha: CaptchaInfo) => void;
   error?: string;
 }
 
-const CaptchaField = ({ value, onChange, onCaptchaIdChange, error }: CaptchaFieldProps) => {
+const CaptchaField = ({ value, onChange, onCaptchaIdChange, onCaptchaLoaded, error }: CaptchaFieldProps) => {
   const [captcha, setCaptcha] = useState<CaptchaInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const mounted = useRef(true);
-  const captchaIdRef = useRef<string>('');
 
   const loadCaptcha = async () => {
     if (loading) return;
@@ -25,8 +25,8 @@ const CaptchaField = ({ value, onChange, onCaptchaIdChange, error }: CaptchaFiel
       const data = await authApi.getCaptcha();
       if (mounted.current) {
         setCaptcha(data);
-        captchaIdRef.current = data.captchaId;
         onCaptchaIdChange(data.captchaId);
+        onCaptchaLoaded?.(data);
       }
     } catch {
       // 静默失败，下次点击重试
@@ -38,8 +38,17 @@ const CaptchaField = ({ value, onChange, onCaptchaIdChange, error }: CaptchaFiel
   useEffect(() => {
     mounted.current = true;
     loadCaptcha();
+    const onRefresh = () => {
+      // 清空输入，重新加载
+      if (onChange && value) {
+        onChange('');
+      }
+      loadCaptcha();
+    };
+    window.addEventListener('captcha-refresh', onRefresh);
     return () => {
       mounted.current = false;
+      window.removeEventListener('captcha-refresh', onRefresh);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

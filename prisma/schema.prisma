@@ -11,6 +11,7 @@ model AppUser {
   id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   username     String   @unique
   phone        String?  @unique
+  email        String?  @unique
   passwordHash String
   role         String   @default("user")
   createdAt    DateTime @default(now())

@@ -18,6 +18,13 @@ export interface LoginRequest {
   captchaCode: string;
 }
 
+export interface EmailLoginRequest {
+  email: string;
+  emailCode: string;
+  captchaId: string;
+  captchaCode: string;
+}
+
 export interface LoginResponse {
   user: UserInfo;
   token: string;
@@ -26,7 +33,16 @@ export interface LoginResponse {
 export interface RegisterRequest {
   username: string;
   phone: string;
+  email: string;
+  emailCode: string;
   password: string;
+  captchaId: string;
+  captchaCode: string;
+}
+
+export interface SendEmailCodeRequest {
+  email: string;
+  usage: 'register' | 'login';
   captchaId: string;
   captchaCode: string;
 }

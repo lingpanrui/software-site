@@ -17,6 +17,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import CaptchaField from '@/components/CaptchaField';
+import EmailCodeField from '@/components/EmailCodeField';
 import { useAuth } from '@/context/AuthContext';
 import { authApi } from '@/api';
 import { toast } from 'sonner';
@@ -28,6 +29,8 @@ const registerSchema = z
       .min(3, '用户名至少 3 个字符')
       .regex(/^[a-z0-9_]+$/, '用户名只能包含小写字母、数字和下划线'),
     phone: z.string().regex(/^1[3-9]\d{9}$/, '请输入正确的 11 位手机号'),
+    email: z.string().email('邮箱格式不正确'),
+    emailCode: z.string().min(1, '请输入邮箱验证码'),
     password: z.string().min(6, '密码至少 6 个字符'),
     confirmPassword: z.string().min(1, '请再次输入密码'),
     captchaId: z.string().min(1, '验证码加载中，请稍候'),
@@ -42,6 +45,8 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 
 const RegisterPage = () => {
   const [loading, setLoading] = useState(false);
+  const [captcha, setCaptcha] = useState<{ captchaId: string; image: string } | null>(null);
+  const [captchaRefreshKey, setCaptchaRefreshKey] = useState(0);
   const navigate = useNavigate();
   const { login } = useAuth();
 
@@ -50,6 +55,8 @@ const RegisterPage = () => {
     defaultValues: {
       username: '',
       phone: '',
+      email: '',
+      emailCode: '',
       password: '',
       confirmPassword: '',
       captchaId: '',
@@ -68,6 +75,8 @@ const RegisterPage = () => {
       const res = await authApi.register({
         username: values.username,
         phone: values.phone,
+        email: values.email,
+        emailCode: values.emailCode,
         password: values.password,
         captchaId: values.captchaId,
         captchaCode: values.captchaCode,
@@ -81,6 +90,7 @@ const RegisterPage = () => {
       form.setValue('captchaCode', '');
       form.setValue('captchaId', '');
       form.clearErrors('captchaCode');
+      setCaptchaRefreshKey((k) => k + 1);
     } finally {
       setLoading(false);
     }
@@ -128,6 +138,40 @@ const RegisterPage = () => {
               />
               <FormField
                 control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>邮箱</FormLabel>
+                    <FormControl>
+                      <Input placeholder="请输入邮箱" type="email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="emailCode"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>邮箱验证码</FormLabel>
+                    <FormControl>
+                      <EmailCodeField
+                        value={field.value}
+                        onChange={field.onChange}
+                        email={form.watch('email')}
+                        usage="register"
+                        captcha={captcha}
+                        captchaCode={form.watch('captchaCode')}
+                        error={form.formState.errors.emailCode?.message}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
                 name="password"
                 render={({ field }) => (
                   <FormItem>
@@ -157,12 +201,14 @@ const RegisterPage = () => {
                 name="captchaCode"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>验证码</FormLabel>
+                    <FormLabel>图形验证码</FormLabel>
                     <FormControl>
                       <CaptchaField
+                        key={captchaRefreshKey}
                         value={field.value}
                         onChange={field.onChange}
                         onCaptchaIdChange={onCaptchaIdChange}
+                        onCaptchaLoaded={setCaptcha}
                         error={form.formState.errors.captchaCode?.message}
                       />
                     </FormControl>
@@ -188,3 +234,4 @@ const RegisterPage = () => {
 };
 
 export default RegisterPage;
+

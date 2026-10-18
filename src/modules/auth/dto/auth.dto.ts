@@ -1,8 +1,8 @@
-import { IsString, MinLength, Matches, IsOptional, IsNotEmpty } from 'class-validator';
+import { IsString, MinLength, Matches, IsNotEmpty, IsEmail, IsOptional } from 'class-validator';
 
 export class LoginDto {
   @IsString()
-  @IsNotEmpty({ message: '请输入用户名或手机号' })
+  @IsNotEmpty({ message: '请输入用户名、手机号或邮箱' })
   username!: string;
 
   @IsString()
@@ -10,11 +10,28 @@ export class LoginDto {
   password!: string;
 
   @IsString()
-  @IsNotEmpty({ message: '请输入验证码' })
+  @IsNotEmpty({ message: '请输入图形验证码' })
   captchaId!: string;
 
   @IsString()
-  @IsNotEmpty({ message: '请输入验证码' })
+  @IsNotEmpty({ message: '请输入图形验证码' })
+  captchaCode!: string;
+}
+
+export class EmailLoginDto {
+  @IsEmail({}, { message: '邮箱格式不正确' })
+  email!: string;
+
+  @IsString()
+  @IsNotEmpty({ message: '请输入邮箱验证码' })
+  emailCode!: string;
+
+  @IsString()
+  @IsNotEmpty({ message: '请输入图形验证码' })
+  captchaId!: string;
+
+  @IsString()
+  @IsNotEmpty({ message: '请输入图形验证码' })
   captchaCode!: string;
 }
 
@@ -29,15 +46,43 @@ export class RegisterDto {
   @Matches(/^1[3-9]\d{9}$/, { message: '手机号格式不正确' })
   phone!: string;
 
+  @IsEmail({}, { message: '邮箱格式不正确' })
+  email!: string;
+
+  @IsString()
+  @IsNotEmpty({ message: '请输入邮箱验证码' })
+  emailCode!: string;
+
   @IsString()
   @MinLength(6, { message: '密码至少6个字符' })
   password!: string;
 
   @IsString()
-  @IsNotEmpty({ message: '请输入验证码' })
+  @IsNotEmpty({ message: '请输入图形验证码' })
   captchaId!: string;
 
   @IsString()
-  @IsNotEmpty({ message: '请输入验证码' })
+  @IsNotEmpty({ message: '请输入图形验证码' })
   captchaCode!: string;
+}
+
+export class SendEmailCodeDto {
+  @IsEmail({}, { message: '邮箱格式不正确' })
+  email!: string;
+
+  @IsString()
+  @IsNotEmpty({ message: '请指定用途' })
+  usage!: 'register' | 'login';
+
+  @IsString()
+  @IsNotEmpty({ message: '请输入图形验证码' })
+  captchaId!: string;
+
+  @IsString()
+  @IsNotEmpty({ message: '请输入图形验证码' })
+  captchaCode!: string;
+
+  @IsOptional()
+  @IsString()
+  registerUsername?: string;
 }

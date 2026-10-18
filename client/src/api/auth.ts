@@ -2,10 +2,12 @@ import { request, logger } from './index';
 import { setToken, clearToken } from './token';
 import type {
   CaptchaInfo,
+  EmailLoginRequest,
   LoginRequest,
   LoginResponse,
   RegisterRequest,
   RegisterResponse,
+  SendEmailCodeRequest,
   UserInfo,
 } from '@/types/api';
 
@@ -47,6 +49,28 @@ export async function login(data: LoginRequest): Promise<LoginResponse> {
     return result;
   } catch (error) {
     logger.error('登录失败', error);
+    throw error;
+  }
+}
+
+export async function emailLogin(data: EmailLoginRequest): Promise<LoginResponse> {
+  try {
+    const response = await request.post('/api/auth/email-login', data);
+    const result = response.data as LoginResponse;
+    setToken(result.token);
+    return result;
+  } catch (error) {
+    logger.error('邮箱登录失败', error);
+    throw error;
+  }
+}
+
+export async function sendEmailCode(data: SendEmailCodeRequest): Promise<{ sent: boolean }> {
+  try {
+    const response = await request.post('/api/auth/send-email-code', data);
+    return response.data as { sent: boolean };
+  } catch (error) {
+    logger.error('发送邮箱验证码失败', error);
     throw error;
   }
 }

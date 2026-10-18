@@ -2,7 +2,7 @@ import { Controller, Post, Body, Get, UseGuards, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CaptchaService } from './captcha.service';
 import { AuthGuard } from '../../common/guards/auth.guard';
-import { LoginDto, RegisterDto } from './dto/auth.dto';
+import { EmailLoginDto, LoginDto, RegisterDto, SendEmailCodeDto } from './dto/auth.dto';
 
 interface UserInfo {
   id: string;
@@ -34,6 +34,16 @@ export class AuthController {
   @Post('login')
   async login(@Body() dto: LoginDto): Promise<AuthResponse> {
     return this.authService.login(dto);
+  }
+
+  @Post('email-login')
+  async emailLogin(@Body() dto: EmailLoginDto): Promise<AuthResponse> {
+    return this.authService.emailLogin(dto);
+  }
+
+  @Post('send-email-code')
+  async sendEmailCode(@Body() dto: SendEmailCodeDto): Promise<{ sent: boolean }> {
+    return this.authService.sendEmailCode(dto);
   }
 
   @Post('register')
