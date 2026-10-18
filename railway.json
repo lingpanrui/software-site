@@ -1,13 +1,10 @@
-[build]
-  builder = "NIXPACKS"
-
-[build.build]
-  steps = [
-    "npm install",
-    "npm run build",
-    "cd client && npm install && npm run build",
-    "mkdir -p dist/client && cp -r client/dist/* dist/client/"
-  ]
-
-[deploy]
-  startCommand = "npx prisma db push && node dist/main.js"
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "npm install --legacy-peer-deps && npx prisma generate && npm run build && cd client && npm install --legacy-peer-deps && npm run build && mkdir -p dist/client && cp -r client/dist/* dist/client/"
+  },
+  "deploy": {
+    "startCommand": "npx prisma db push && node dist/main.js"
+  }
+}
