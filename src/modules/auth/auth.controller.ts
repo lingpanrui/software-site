@@ -14,6 +14,10 @@ interface AuthResponse {
   token: string;
 }
 
+interface SecurityCodeBody {
+  code: string;
+}
+
 @Controller('api/auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -32,5 +36,14 @@ export class AuthController {
   @Get('me')
   async me(@Req() req: { user: UserInfo }): Promise<UserInfo> {
     return req.user;
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('verify-security-code')
+  async verifySecurityCode(
+    @Req() req: { user: UserInfo },
+    @Body() body: SecurityCodeBody,
+  ): Promise<{ verified: boolean }> {
+    return this.authService.verifySecurityCode(req.user, body.code);
   }
 }

@@ -49,6 +49,7 @@ import {
 } from '@/components/ui/table';
 import { useAuth } from '@/context/AuthContext';
 import { softwareApi, request } from '@/api';
+import AdminSecurityGate from '@/components/AdminSecurityGate';
 import type { SoftwareItem, UploadResponse } from '@/types/api';
 import { toast } from 'sonner';
 
@@ -485,7 +486,8 @@ const AdminSoftwarePage = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <AdminSecurityGate>
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">软件管理</h1>
         <Button onClick={() => setCreateOpen(true)}>
@@ -624,7 +626,8 @@ const AdminSoftwarePage = () => {
         loading={deleteLoading}
         softwareName={deleteItem?.name}
       />
-    </div>
+      </div>
+    </AdminSecurityGate>
   );
 };
 

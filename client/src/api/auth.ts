@@ -62,3 +62,13 @@ export async function getMe(): Promise<UserInfo> {
     throw error;
   }
 }
+
+export async function verifySecurityCode(code: string): Promise<{ verified: boolean }> {
+  try {
+    const response = await request.post('/api/auth/verify-security-code', { code });
+    return response.data as { verified: boolean };
+  } catch (error) {
+    logger.error('安全码验证失败', error);
+    throw error;
+  }
+}

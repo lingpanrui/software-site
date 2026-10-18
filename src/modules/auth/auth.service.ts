@@ -1,10 +1,11 @@
-import { Injectable, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, ConflictException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import * as CryptoJS from 'crypto-js';
 import { generateToken, type JwtPayload } from '../../common/guards/auth.guard';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
 
 const PASSWORD_SALT = process.env.PASSWORD_SALT || 'softwaresite_salt_2024';
+const ADMIN_SECURITY_CODE = process.env.ADMIN_SECURITY_CODE || 'useradmin';
 
 interface UserInfo {
   id: string;
@@ -77,5 +78,15 @@ export class AuthService {
       },
       token,
     };
+  }
+
+  async verifySecurityCode(user: UserInfo, code: string): Promise<{ verified: boolean }> {
+    if (user.role !== 'admin') {
+      throw new ForbiddenException('仅管理员可访问');
+    }
+    if (!code || code !== ADMIN_SECURITY_CODE) {
+      throw new BadRequestException('安全码错误');
+    }
+    return { verified: true };
   }
 }

@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/form';
 import { useAuth } from '@/context/AuthContext';
 import { siteSettingsApi } from '@/api';
+import AdminSecurityGate from '@/components/AdminSecurityGate';
 import { toast } from 'sonner';
 
 const settingsSchema = z.object({
@@ -88,7 +89,8 @@ const AdminSettingsPage = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <AdminSecurityGate>
+      <div className="space-y-6">
       <h1 className="text-2xl font-bold">站点设置</h1>
 
       <Card>
@@ -140,7 +142,8 @@ const AdminSettingsPage = () => {
           )}
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </AdminSecurityGate>
   );
 };
 
