@@ -1,0 +1,64 @@
+import { request, logger } from './index';
+import { setToken, clearToken } from './token';
+import type {
+  LoginRequest,
+  LoginResponse,
+  RegisterRequest,
+  RegisterResponse,
+  UserInfo,
+} from '@/types/api';
+
+const USER_KEY = 'software_site_user';
+
+export function getUser(): UserInfo | null {
+  const raw = localStorage.getItem(USER_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as UserInfo;
+  } catch {
+    return null;
+  }
+}
+
+export function setUser(user: UserInfo): void {
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+}
+
+export function clearUser(): void {
+  localStorage.removeItem(USER_KEY);
+}
+
+export async function login(data: LoginRequest): Promise<LoginResponse> {
+  try {
+    const response = await request.post('/api/auth/login', data);
+    const result = response.data as LoginResponse;
+    setToken(result.token);
+    return result;
+  } catch (error) {
+    logger.error('登录失败', error);
+    throw error;
+  }
+}
+
+export async function register(data: RegisterRequest): Promise<RegisterResponse> {
+  try {
+    const response = await request.post('/api/auth/register', data);
+    const result = response.data as RegisterResponse;
+    setToken(result.token);
+    return result;
+  } catch (error) {
+    logger.error('注册失败', error);
+    throw error;
+  }
+}
+
+export async function getMe(): Promise<UserInfo> {
+  try {
+    const response = await request.get('/api/auth/me');
+    return response.data as UserInfo;
+  } catch (error) {
+    logger.error('获取用户信息失败', error);
+    clearToken();
+    throw error;
+  }
+}

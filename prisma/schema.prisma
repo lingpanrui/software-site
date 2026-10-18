@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AppUser {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  role         String   @default("user")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("app_users")
+}
+
+model Software {
+  id            String   @id @default(cuid())
+  name          String
+  description   String   @default("")
+  version       String   @default("")
+  category      String   @default("")
+  iconUrl       String   @default("")
+  fileUrl       String   @default("")
+  fileSize      BigInt   @default(0)
+  downloadCount Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([name])
+  @@index([category])
+  @@map("software")
+}
+
+model SiteSettings {
+  id        String   @id @default(cuid())
+  siteName  String   @default("软件资源站")
+  siteUrl   String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("site_settings")
+}

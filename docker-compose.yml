@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: software-site-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: software_site
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d software_site"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: software-site-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/software_site
+      JWT_SECRET: ${JWT_SECRET:-change_this_to_a_long_random_string_please_change_it}
+      PASSWORD_SALT: ${PASSWORD_SALT:-softwaresite_salt_2024}
+      UPLOAD_DIR: /app/uploads
+      PORT: 3000
+      NODE_ENV: production
+    volumes:
+      - uploads:/app/uploads
+
+volumes:
+  postgres_data:
+  uploads:
