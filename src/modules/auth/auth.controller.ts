@@ -1,5 +1,6 @@
 import { Controller, Post, Body, Get, UseGuards, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { CaptchaService } from './captcha.service';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
 
@@ -20,7 +21,15 @@ interface SecurityCodeBody {
 
 @Controller('api/auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly captchaService: CaptchaService,
+  ) {}
+
+  @Get('captcha')
+  async captcha(): Promise<{ captchaId: string; image: string }> {
+    return this.captchaService.generate();
+  }
 
   @Post('login')
   async login(@Body() dto: LoginDto): Promise<AuthResponse> {

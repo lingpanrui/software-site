@@ -16,13 +16,16 @@ import {
   FormControl,
   FormMessage,
 } from '@/components/ui/form';
+import CaptchaField from '@/components/CaptchaField';
 import { useAuth } from '@/context/AuthContext';
 import { authApi } from '@/api';
 import { toast } from 'sonner';
 
 const loginSchema = z.object({
-  username: z.string().min(1, '请输入用户名'),
+  username: z.string().min(1, '请输入用户名或手机号'),
   password: z.string().min(1, '请输入密码'),
+  captchaId: z.string().min(1, '验证码加载中，请稍候'),
+  captchaCode: z.string().min(1, '请输入验证码'),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -37,8 +40,15 @@ const LoginPage = () => {
     defaultValues: {
       username: '',
       password: '',
+      captchaId: '',
+      captchaCode: '',
     },
   });
+
+  const onCaptchaIdChange = (captchaId: string) => {
+    form.setValue('captchaId', captchaId);
+    form.clearErrors('captchaId');
+  };
 
   const onSubmit = async (values: LoginFormValues) => {
     setLoading(true);
@@ -50,6 +60,10 @@ const LoginPage = () => {
     } catch (error: any) {
       const msg = error?.response?.data?.error?.message || '登录失败，请检查用户名和密码';
       toast.error(msg);
+      // 登录失败后刷新验证码
+      form.setValue('captchaCode', '');
+      form.setValue('captchaId', '');
+      form.clearErrors('captchaCode');
     } finally {
       setLoading(false);
     }
@@ -74,9 +88,9 @@ const LoginPage = () => {
                 name="username"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>用户名</FormLabel>
+                    <FormLabel>用户名 / 手机号</FormLabel>
                     <FormControl>
-                      <Input placeholder="请输入用户名" {...field} />
+                      <Input placeholder="请输入用户名或手机号" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -90,6 +104,24 @@ const LoginPage = () => {
                     <FormLabel>密码</FormLabel>
                     <FormControl>
                       <Input type="password" placeholder="请输入密码" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="captchaCode"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>验证码</FormLabel>
+                    <FormControl>
+                      <CaptchaField
+                        value={field.value}
+                        onChange={field.onChange}
+                        onCaptchaIdChange={onCaptchaIdChange}
+                        error={form.formState.errors.captchaCode?.message}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -16,6 +16,7 @@ import {
   FormControl,
   FormMessage,
 } from '@/components/ui/form';
+import CaptchaField from '@/components/CaptchaField';
 import { useAuth } from '@/context/AuthContext';
 import { authApi } from '@/api';
 import { toast } from 'sonner';
@@ -26,8 +27,11 @@ const registerSchema = z
       .string()
       .min(3, '用户名至少 3 个字符')
       .regex(/^[a-z0-9_]+$/, '用户名只能包含小写字母、数字和下划线'),
+    phone: z.string().regex(/^1[3-9]\d{9}$/, '请输入正确的 11 位手机号'),
     password: z.string().min(6, '密码至少 6 个字符'),
     confirmPassword: z.string().min(1, '请再次输入密码'),
+    captchaId: z.string().min(1, '验证码加载中，请稍候'),
+    captchaCode: z.string().min(1, '请输入验证码'),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: '两次输入的密码不一致',
@@ -45,17 +49,28 @@ const RegisterPage = () => {
     resolver: zodResolver(registerSchema),
     defaultValues: {
       username: '',
+      phone: '',
       password: '',
       confirmPassword: '',
+      captchaId: '',
+      captchaCode: '',
     },
   });
+
+  const onCaptchaIdChange = (captchaId: string) => {
+    form.setValue('captchaId', captchaId);
+    form.clearErrors('captchaId');
+  };
 
   const onSubmit = async (values: RegisterFormValues) => {
     setLoading(true);
     try {
       const res = await authApi.register({
         username: values.username,
+        phone: values.phone,
         password: values.password,
+        captchaId: values.captchaId,
+        captchaCode: values.captchaCode,
       });
       login(res.user, res.token);
       toast.success('注册成功');
@@ -63,6 +78,9 @@ const RegisterPage = () => {
     } catch (error: any) {
       const msg = error?.response?.data?.error?.message || '注册失败，请稍后重试';
       toast.error(msg);
+      form.setValue('captchaCode', '');
+      form.setValue('captchaId', '');
+      form.clearErrors('captchaCode');
     } finally {
       setLoading(false);
     }
@@ -97,6 +115,19 @@ const RegisterPage = () => {
               />
               <FormField
                 control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>手机号</FormLabel>
+                    <FormControl>
+                      <Input placeholder="请输入 11 位手机号" maxLength={11} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
                 name="password"
                 render={({ field }) => (
                   <FormItem>
@@ -116,6 +147,24 @@ const RegisterPage = () => {
                     <FormLabel>确认密码</FormLabel>
                     <FormControl>
                       <Input type="password" placeholder="请再次输入密码" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="captchaCode"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>验证码</FormLabel>
+                    <FormControl>
+                      <CaptchaField
+                        value={field.value}
+                        onChange={field.onChange}
+                        onCaptchaIdChange={onCaptchaIdChange}
+                        error={form.formState.errors.captchaCode?.message}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

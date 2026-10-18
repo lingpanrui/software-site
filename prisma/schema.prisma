@@ -8,8 +8,9 @@ datasource db {
 }
 
 model AppUser {
-  id           String   @id @default(cuid())
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   username     String   @unique
+  phone        String?  @unique
   passwordHash String
   role         String   @default("user")
   createdAt    DateTime @default(now())
@@ -19,7 +20,7 @@ model AppUser {
 }
 
 model Software {
-  id            String   @id @default(cuid())
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name          String
   description   String   @default("")
   version       String   @default("")
@@ -37,7 +38,7 @@ model Software {
 }
 
 model SiteSettings {
-  id        String   @id @default(cuid())
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   siteName  String   @default("软件资源站")
   siteUrl   String   @default("")
   createdAt DateTime @default(now())

@@ -6,9 +6,16 @@ export interface UserInfo {
   role: UserRole;
 }
 
+export interface CaptchaInfo {
+  captchaId: string;
+  image: string;
+}
+
 export interface LoginRequest {
   username: string;
   password: string;
+  captchaId: string;
+  captchaCode: string;
 }
 
 export interface LoginResponse {
@@ -18,7 +25,10 @@ export interface LoginResponse {
 
 export interface RegisterRequest {
   username: string;
+  phone: string;
   password: string;
+  captchaId: string;
+  captchaCode: string;
 }
 
 export interface RegisterResponse {

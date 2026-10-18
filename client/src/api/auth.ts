@@ -1,6 +1,7 @@
 import { request, logger } from './index';
 import { setToken, clearToken } from './token';
 import type {
+  CaptchaInfo,
   LoginRequest,
   LoginResponse,
   RegisterRequest,
@@ -26,6 +27,16 @@ export function setUser(user: UserInfo): void {
 
 export function clearUser(): void {
   localStorage.removeItem(USER_KEY);
+}
+
+export async function getCaptcha(): Promise<CaptchaInfo> {
+  try {
+    const response = await request.get('/api/auth/captcha');
+    return response.data as CaptchaInfo;
+  } catch (error) {
+    logger.error('获取验证码失败', error);
+    throw error;
+  }
 }
 
 export async function login(data: LoginRequest): Promise<LoginResponse> {
