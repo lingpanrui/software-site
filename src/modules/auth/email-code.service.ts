@@ -166,20 +166,20 @@ export class EmailCodeService {
   }
 
   /**
-   * 通过 Maileroo REST API 发送邮件（POST https://api.maileroo.com/send）
+   * 通过 Maileroo REST API 发送邮件（POST https://smtp.maileroo.com/api/v2/emails）
    */
   private async sendViaMaileroo(to: string, subject: string, text: string): Promise<void> {
-    const res = await fetch('https://api.maileroo.com/send', {
+    const res = await fetch('https://smtp.maileroo.com/api/v2/emails', {
       method: 'POST',
       headers: {
         'X-API-Key': this.mailerooApiKey,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: { address: this.mailerooSenderEmail, name: this.mailerooSenderName },
+        from: { address: this.mailerooSenderEmail, display_name: this.mailerooSenderName },
         to: [{ address: to }],
         subject,
-        text,
+        plain: text,
       }),
       signal: AbortSignal.timeout(20000),
     });
