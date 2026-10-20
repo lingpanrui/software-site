@@ -25,6 +25,9 @@ export class EmailCodeService {
   private readonly brevoApiKey = process.env.BREVO_API_KEY || '';
   private readonly brevoSenderEmail = process.env.BREVO_SENDER_EMAIL || '';
   private readonly brevoSenderName = process.env.BREVO_SENDER_NAME || '软件资源站';
+  private readonly mailerooApiKey = process.env.MAILEROO_API_KEY || '';
+  private readonly mailerooSenderEmail = process.env.MAILEROO_SENDER_EMAIL || '';
+  private readonly mailerooSenderName = process.env.MAILEROO_SENDER_NAME || '软件资源站';
 
   constructor() {
     const configs = this.loadConfigs();
@@ -44,7 +47,10 @@ export class EmailCodeService {
     if (this.brevoApiKey && this.brevoSenderEmail) {
       this.logger.log(`邮件服务[HTTP] 已配置: Brevo API (${this.brevoSenderEmail})`);
     }
-    if (this.providers.length === 0 && !(this.brevoApiKey && this.brevoSenderEmail)) {
+    if (this.mailerooApiKey && this.mailerooSenderEmail) {
+      this.logger.log(`邮件服务[HTTP] 已配置: Maileroo API (${this.mailerooSenderEmail})`);
+    }
+    if (this.providers.length === 0 && !(this.brevoApiKey && this.brevoSenderEmail) && !(this.mailerooApiKey && this.mailerooSenderEmail)) {
       this.logger.warn('未配置任何邮件服务，邮箱验证码功能不可用');
     }
   }
@@ -75,7 +81,7 @@ export class EmailCodeService {
    * 优先使用 Brevo HTTP API（走 443 端口，云平台不会封锁），失败自动回退 SMTP 主备服务
    */
   async sendCode(email: string, usage: 'register' | 'login'): Promise<{ sent: boolean }> {
-    if (this.providers.length === 0 && !(this.brevoApiKey && this.brevoSenderEmail)) {
+    if (this.providers.length === 0 && !(this.brevoApiKey && this.brevoSenderEmail) && !(this.mailerooApiKey && this.mailerooSenderEmail)) {
       throw new BadRequestException('邮件服务未配置，请联系管理员');
     }
     const normalized = email.toLowerCase().trim();
@@ -89,19 +95,31 @@ export class EmailCodeService {
 
     let lastError: Error | null = null;
 
-    // 1) Brevo HTTP API（走 443，最可靠）
-    if (this.brevoApiKey && this.brevoSenderEmail) {
+    // 1) Maileroo HTTP API（走 443，自带 sandbox 域，最可靠）
+    if (this.mailerooApiKey && this.mailerooSenderEmail) {
       try {
-        await this.sendViaBrevo(normalized, subject, text);
-        this.logger.log(`验证码已通过[HTTP]发送至 ${normalized}（${usage}）`);
+        await this.sendViaMaileroo(normalized, subject, text);
+        this.logger.log(`验证码已通过[HTTP-Maileroo]发送至 ${normalized}（${usage}）`);
         return { sent: true };
       } catch (error) {
         lastError = error as Error;
-        this.logger.error(`邮件服务[HTTP]发送失败: ${lastError.message}`);
+        this.logger.error(`邮件服务[HTTP-Maileroo]发送失败: ${lastError.message}`);
       }
     }
 
-    // 2) SMTP 主备自动切换
+    // 2) Brevo HTTP API（走 443）
+    if (this.brevoApiKey && this.brevoSenderEmail) {
+      try {
+        await this.sendViaBrevo(normalized, subject, text);
+        this.logger.log(`验证码已通过[HTTP-Brevo]发送至 ${normalized}（${usage}）`);
+        return { sent: true };
+      } catch (error) {
+        lastError = error as Error;
+        this.logger.error(`邮件服务[HTTP-Brevo]发送失败: ${lastError.message}`);
+      }
+    }
+
+    // 3) SMTP 主备自动切换
     for (const provider of this.providers) {
       try {
         const info = await provider.transporter.sendMail({
@@ -144,6 +162,30 @@ export class EmailCodeService {
     if (!res.ok) {
       const body = await res.text().catch(() => '');
       throw new Error(`Brevo HTTP ${res.status}: ${body.slice(0, 300)}`);
+    }
+  }
+
+  /**
+   * 通过 Maileroo REST API 发送邮件（POST https://api.maileroo.com/send）
+   */
+  private async sendViaMaileroo(to: string, subject: string, text: string): Promise<void> {
+    const res = await fetch('https://api.maileroo.com/send', {
+      method: 'POST',
+      headers: {
+        'X-API-Key': this.mailerooApiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: { address: this.mailerooSenderEmail, name: this.mailerooSenderName },
+        to: [{ address: to }],
+        subject,
+        text,
+      }),
+      signal: AbortSignal.timeout(20000),
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      throw new Error(`Maileroo HTTP ${res.status}: ${body.slice(0, 300)}`);
     }
   }
 
