@@ -22,6 +22,9 @@ export class EmailCodeService {
   private readonly store = new Map<string, EmailCodeData>();
   private readonly TTL_MS = 10 * 60 * 1000; // 10 分钟有效
   private providers: { name: string; user: string; transporter: nodemailer.Transporter }[] = [];
+  private readonly brevoApiKey = process.env.BREVO_API_KEY || '';
+  private readonly brevoSenderEmail = process.env.BREVO_SENDER_EMAIL || '';
+  private readonly brevoSenderName = process.env.BREVO_SENDER_NAME || '软件资源站';
 
   constructor() {
     const configs = this.loadConfigs();
@@ -38,7 +41,10 @@ export class EmailCodeService {
       this.providers.push({ name: cfg.name, user: cfg.user, transporter });
       this.logger.log(`邮件服务[${cfg.name}] 已配置: ${cfg.host}:${cfg.port} (${cfg.user})`);
     }
-    if (this.providers.length === 0) {
+    if (this.brevoApiKey && this.brevoSenderEmail) {
+      this.logger.log(`邮件服务[HTTP] 已配置: Brevo API (${this.brevoSenderEmail})`);
+    }
+    if (this.providers.length === 0 && !(this.brevoApiKey && this.brevoSenderEmail)) {
       this.logger.warn('未配置任何邮件服务，邮箱验证码功能不可用');
     }
   }
@@ -65,10 +71,11 @@ export class EmailCodeService {
   }
 
   /**
-   * 生成并发送邮箱验证码，主服务失败自动切换到备服务
+   * 生成并发送邮箱验证码
+   * 优先使用 Brevo HTTP API（走 443 端口，云平台不会封锁），失败自动回退 SMTP 主备服务
    */
   async sendCode(email: string, usage: 'register' | 'login'): Promise<{ sent: boolean }> {
-    if (this.providers.length === 0) {
+    if (this.providers.length === 0 && !(this.brevoApiKey && this.brevoSenderEmail)) {
       throw new BadRequestException('邮件服务未配置，请联系管理员');
     }
     const normalized = email.toLowerCase().trim();
@@ -81,6 +88,20 @@ export class EmailCodeService {
     const text = `你的验证码是：${code}，10 分钟内有效。如果不是你本人操作，请忽略此邮件。`;
 
     let lastError: Error | null = null;
+
+    // 1) Brevo HTTP API（走 443，最可靠）
+    if (this.brevoApiKey && this.brevoSenderEmail) {
+      try {
+        await this.sendViaBrevo(normalized, subject, text);
+        this.logger.log(`验证码已通过[HTTP]发送至 ${normalized}（${usage}）`);
+        return { sent: true };
+      } catch (error) {
+        lastError = error as Error;
+        this.logger.error(`邮件服务[HTTP]发送失败: ${lastError.message}`);
+      }
+    }
+
+    // 2) SMTP 主备自动切换
     for (const provider of this.providers) {
       try {
         const info = await provider.transporter.sendMail({
@@ -99,6 +120,31 @@ export class EmailCodeService {
 
     this.logger.error(`所有邮件服务均发送失败，最后错误: ${lastError?.message}`);
     throw new BadRequestException('验证码发送失败，请稍后重试');
+  }
+
+  /**
+   * 通过 Brevo REST API 发送邮件（POST https://api.brevo.com/v3/smtp/email）
+   */
+  private async sendViaBrevo(to: string, subject: string, text: string): Promise<void> {
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'api-key': this.brevoApiKey,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        sender: { name: this.brevoSenderName, email: this.brevoSenderEmail },
+        to: [{ email: to }],
+        subject,
+        textContent: text,
+      }),
+      signal: AbortSignal.timeout(20000),
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      throw new Error(`Brevo HTTP ${res.status}: ${body.slice(0, 300)}`);
+    }
   }
 
   /**
