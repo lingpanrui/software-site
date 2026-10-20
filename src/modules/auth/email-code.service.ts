@@ -51,10 +51,10 @@ export class EmailCodeService {
   private loadConfigs(): ProviderConfig[] {
     const list: ProviderConfig[] = [];
     const add = (prefix: string, name: string) => {
-      const host = process.env[`${prefix}HOST`] || '';
-      const port = parseInt(process.env[`${prefix}PORT`] || '587', 10);
-      const user = process.env[`${prefix}USER`] || '';
-      const pass = process.env[`${prefix}PASS`] || '';
+      const host = process.env[`${prefix}_HOST`] || '';
+      const port = parseInt(process.env[`${prefix}_PORT`] || '587', 10);
+      const user = process.env[`${prefix}_USER`] || '';
+      const pass = process.env[`${prefix}_PASS`] || '';
       if (host && user && pass) {
         list.push({ name, host, port, user, pass });
       }
