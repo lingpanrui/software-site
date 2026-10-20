@@ -2,10 +2,13 @@ import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { randomInt } from 'crypto';
 
-const SMTP_HOST = process.env.SMTP_HOST || 'smtp.qq.com';
-const SMTP_PORT = parseInt(process.env.SMTP_PORT || '465', 10);
-const SMTP_USER = process.env.SMTP_USER || '';
-const SMTP_PASS = process.env.SMTP_PASS || '';
+interface ProviderConfig {
+  name: string;
+  host: string;
+  port: number;
+  user: string;
+  pass: string;
+}
 
 interface EmailCodeData {
   code: string;
@@ -18,27 +21,54 @@ export class EmailCodeService {
   private readonly logger = new Logger(EmailCodeService.name);
   private readonly store = new Map<string, EmailCodeData>();
   private readonly TTL_MS = 10 * 60 * 1000; // 10 分钟有效
-  private transporter: nodemailer.Transporter | null = null;
+  private providers: { name: string; user: string; transporter: nodemailer.Transporter }[] = [];
 
   constructor() {
-    if (SMTP_USER && SMTP_PASS) {
-      this.transporter = nodemailer.createTransport({
-        host: SMTP_HOST,
-        port: SMTP_PORT,
-        secure: SMTP_PORT === 465,
-        auth: { user: SMTP_USER, pass: SMTP_PASS },
+    const configs = this.loadConfigs();
+    for (const cfg of configs) {
+      const transporter = nodemailer.createTransport({
+        host: cfg.host,
+        port: cfg.port,
+        secure: cfg.port === 465,
+        auth: { user: cfg.user, pass: cfg.pass },
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 20000,
       });
-      this.logger.log(`SMTP 已配置: ${SMTP_HOST}:${SMTP_PORT} (${SMTP_USER})`);
-    } else {
-      this.logger.warn('SMTP_USER/SMTP_PASS 未配置，邮件验证码功能不可用');
+      this.providers.push({ name: cfg.name, user: cfg.user, transporter });
+      this.logger.log(`邮件服务[${cfg.name}] 已配置: ${cfg.host}:${cfg.port} (${cfg.user})`);
+    }
+    if (this.providers.length === 0) {
+      this.logger.warn('未配置任何邮件服务，邮箱验证码功能不可用');
     }
   }
 
   /**
-   * 生成并发送邮箱验证码
+   * 从环境变量读取邮件服务配置（支持主备多服务自动切换）
+   * 主服务: SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS
+   * 备服务: SMTP2_HOST/SMTP2_PORT/SMTP2_USER/SMTP2_PASS
+   */
+  private loadConfigs(): ProviderConfig[] {
+    const list: ProviderConfig[] = [];
+    const add = (prefix: string, name: string) => {
+      const host = process.env[`${prefix}HOST`] || '';
+      const port = parseInt(process.env[`${prefix}PORT`] || '587', 10);
+      const user = process.env[`${prefix}USER`] || '';
+      const pass = process.env[`${prefix}PASS`] || '';
+      if (host && user && pass) {
+        list.push({ name, host, port, user, pass });
+      }
+    };
+    add('SMTP', '主');
+    add('SMTP2', '备');
+    return list;
+  }
+
+  /**
+   * 生成并发送邮箱验证码，主服务失败自动切换到备服务
    */
   async sendCode(email: string, usage: 'register' | 'login'): Promise<{ sent: boolean }> {
-    if (!this.transporter) {
+    if (this.providers.length === 0) {
       throw new BadRequestException('邮件服务未配置，请联系管理员');
     }
     const normalized = email.toLowerCase().trim();
@@ -50,19 +80,25 @@ export class EmailCodeService {
     const subject = usage === 'register' ? '【软件资源站】注册验证码' : '【软件资源站】登录验证码';
     const text = `你的验证码是：${code}，10 分钟内有效。如果不是你本人操作，请忽略此邮件。`;
 
-    try {
-      await this.transporter.sendMail({
-        from: `"软件资源站" <${SMTP_USER}>`,
-        to: normalized,
-        subject,
-        text,
-      });
-      this.logger.log(`验证码已发送至 ${normalized}（${usage}）`);
-      return { sent: true };
-    } catch (error) {
-      this.logger.error(`邮件发送失败: ${(error as Error).message}`);
-      throw new BadRequestException('验证码发送失败，请稍后重试');
+    let lastError: Error | null = null;
+    for (const provider of this.providers) {
+      try {
+        const info = await provider.transporter.sendMail({
+          from: `"软件资源站" <${provider.user}>`,
+          to: normalized,
+          subject,
+          text,
+        });
+        this.logger.log(`验证码已通过[${provider.name}]发送至 ${normalized}（${usage}），messageId=${info.messageId}`);
+        return { sent: true };
+      } catch (error) {
+        lastError = error as Error;
+        this.logger.error(`邮件服务[${provider.name}]发送失败: ${lastError.message}`);
+      }
     }
+
+    this.logger.error(`所有邮件服务均发送失败，最后错误: ${lastError?.message}`);
+    throw new BadRequestException('验证码发送失败，请稍后重试');
   }
 
   /**
