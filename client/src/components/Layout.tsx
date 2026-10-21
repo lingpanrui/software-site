@@ -125,8 +125,10 @@ const Layout = () => {
       </main>
 
       <footer className="border-t border-border py-6 text-center text-sm text-muted-foreground">
-        <div className="max-w-7xl mx-auto px-4">
+        <div className="max-w-7xl mx-auto px-4 space-y-1.5">
           <p>&copy; {new Date().getFullYear()} {siteSettings.siteName}. 提供优质软件资源下载服务。</p>
+          <p>本站为个人软件分享网站，托管于境外服务器（美国），非任何官方机构站点，软件均来自第三方开发者，下载前请自行核对。</p>
+          <p>如遇下载或使用问题，请联系网站管理员。</p>
         </div>
       </footer>
     </div>
