@@ -1,4 +1,4 @@
-import { IsString, IsOptional } from 'class-validator';
+import { IsString, IsOptional, IsBoolean } from 'class-validator';
 
 export class UpdateSiteSettingsDto {
   @IsOptional()
@@ -8,4 +8,8 @@ export class UpdateSiteSettingsDto {
   @IsOptional()
   @IsString()
   siteUrl?: string;
+
+  @IsOptional()
+  @IsBoolean({ message: 'allowlistOnly 必须是布尔值' })
+  allowlistOnly?: boolean;
 }

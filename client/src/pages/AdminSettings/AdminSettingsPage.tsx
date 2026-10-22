@@ -7,7 +7,7 @@ import { Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
   Form,
   FormField,
@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 const settingsSchema = z.object({
   siteName: z.string().min(1, '网站名称不能为空'),
   siteUrl: z.string().min(1, '站点地址不能为空').url('请输入有效的 URL'),
+  allowlistOnly: z.boolean(),
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
@@ -39,6 +40,7 @@ const AdminSettingsPage = () => {
     defaultValues: {
       siteName: '',
       siteUrl: '',
+      allowlistOnly: false,
     },
   });
 
@@ -56,6 +58,7 @@ const AdminSettingsPage = () => {
         form.reset({
           siteName: settings.siteName,
           siteUrl: settings.siteUrl,
+          allowlistOnly: settings.allowlistOnly,
         });
       } catch (error: any) {
         const msg = error?.response?.data?.error?.message || '获取站点设置失败';
@@ -134,6 +137,43 @@ const AdminSettingsPage = () => {
                     </FormItem>
                   )}
                 />
+
+                <Card className="border-dashed">
+                  <CardContent className="pt-6">
+                    <FormField
+                      control={form.control}
+                      name="allowlistOnly"
+                      render={({ field }) => (
+                        <FormItem className="flex items-center justify-between gap-4">
+                          <div>
+                            <FormLabel className="text-sm font-medium">仅白名单用户可访问</FormLabel>
+                            <CardDescription className="text-xs mt-1">
+                              开启后：未加入白名单的用户无法登录，新用户注册通道关闭（管理员不受影响）。
+                            </CardDescription>
+                          </div>
+                          <FormControl>
+                            <button
+                              type="button"
+                              role="switch"
+                              aria-checked={field.value}
+                              onClick={() => field.onChange(!field.value)}
+                              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                                field.value ? 'bg-primary' : 'bg-muted'
+                              }`}
+                            >
+                              <span
+                                className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                                  field.value ? 'translate-x-[22px]' : 'translate-x-[3px]'
+                                }`}
+                              />
+                            </button>
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+
                 <Button type="submit" disabled={saving}>
                   {saving ? '保存中...' : '保存设置'}
                 </Button>

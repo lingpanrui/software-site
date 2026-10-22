@@ -93,14 +93,30 @@ export class EmailCodeService {
     const subject = usage === 'register' ? '【软件资源站】注册验证码' : '【软件资源站】登录验证码';
     const text = `你的验证码是：${code}，10 分钟内有效。如果不是你本人操作，请忽略此邮件。`;
 
+    await this.sendEmail(normalized, subject, text);
+    this.logger.log(`验证码已通过[HTTP-Maileroo]发送至 ${normalized}（${usage}）`);
+    return { sent: true };
+  }
+
+  /**
+   * 发送任意邮件（供反馈投诉等场景复用），走 Maileroo → Brevo → SMTP 三级通道
+   */
+  async sendRaw(to: string, subject: string, text: string): Promise<void> {
+    if (this.providers.length === 0 && !(this.brevoApiKey && this.brevoSenderEmail) && !(this.mailerooApiKey && this.mailerooSenderEmail)) {
+      throw new BadRequestException('邮件服务未配置，请联系管理员');
+    }
+    await this.sendEmail(to.trim(), subject, text);
+  }
+
+  private async sendEmail(to: string, subject: string, text: string): Promise<void> {
     let lastError: Error | null = null;
 
     // 1) Maileroo HTTP API（走 443，自带 sandbox 域，最可靠）
     if (this.mailerooApiKey && this.mailerooSenderEmail) {
       try {
-        await this.sendViaMaileroo(normalized, subject, text);
-        this.logger.log(`验证码已通过[HTTP-Maileroo]发送至 ${normalized}（${usage}）`);
-        return { sent: true };
+        await this.sendViaMaileroo(to, subject, text);
+        this.logger.log(`邮件已通过[HTTP-Maileroo]发送至 ${to}`);
+        return;
       } catch (error) {
         lastError = error as Error;
         this.logger.error(`邮件服务[HTTP-Maileroo]发送失败: ${lastError.message}`);
@@ -110,9 +126,9 @@ export class EmailCodeService {
     // 2) Brevo HTTP API（走 443）
     if (this.brevoApiKey && this.brevoSenderEmail) {
       try {
-        await this.sendViaBrevo(normalized, subject, text);
-        this.logger.log(`验证码已通过[HTTP-Brevo]发送至 ${normalized}（${usage}）`);
-        return { sent: true };
+        await this.sendViaBrevo(to, subject, text);
+        this.logger.log(`邮件已通过[HTTP-Brevo]发送至 ${to}`);
+        return;
       } catch (error) {
         lastError = error as Error;
         this.logger.error(`邮件服务[HTTP-Brevo]发送失败: ${lastError.message}`);
@@ -124,12 +140,12 @@ export class EmailCodeService {
       try {
         const info = await provider.transporter.sendMail({
           from: `"软件资源站" <${provider.user}>`,
-          to: normalized,
+          to,
           subject,
           text,
         });
-        this.logger.log(`验证码已通过[${provider.name}]发送至 ${normalized}（${usage}），messageId=${info.messageId}`);
-        return { sent: true };
+        this.logger.log(`邮件已通过[${provider.name}]发送至 ${to}，messageId=${info.messageId}`);
+        return;
       } catch (error) {
         lastError = error as Error;
         this.logger.error(`邮件服务[${provider.name}]发送失败: ${lastError.message}`);
@@ -137,7 +153,7 @@ export class EmailCodeService {
     }
 
     this.logger.error(`所有邮件服务均发送失败，最后错误: ${lastError?.message}`);
-    throw new BadRequestException('验证码发送失败，请稍后重试');
+    throw new BadRequestException('邮件发送失败，请稍后重试');
   }
 
   /**

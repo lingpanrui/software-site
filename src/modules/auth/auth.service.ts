@@ -54,6 +54,7 @@ export class AuthService {
     if (hashed !== user.passwordHash) {
       throw new BadRequestException('用户名或密码错误');
     }
+    await this.checkAccess(user);
     return this.buildAuthResponse(user);
   }
 
@@ -70,7 +71,26 @@ export class AuthService {
     if (!user) {
       throw new BadRequestException('该邮箱未注册');
     }
+    await this.checkAccess(user);
     return this.buildAuthResponse(user);
+  }
+
+  /** 黑名单/白名单检查：黑名单禁止登录；开启仅白名单模式时非白名单用户禁止登录（管理员不受限） */
+  private async checkAccess(user: {
+    id: string;
+    username: string;
+    role: string;
+    blacklisted?: boolean;
+    whitelisted?: boolean;
+  }): Promise<void> {
+    if (user.role === 'admin') return;
+    if (user.blacklisted) {
+      throw new ForbiddenException('该账号已被列入黑名单，无法登录');
+    }
+    const settings = await this.prisma.siteSettings.findFirst();
+    if (settings?.allowlistOnly && !user.whitelisted) {
+      throw new ForbiddenException('网站当前仅允许白名单用户访问');
+    }
   }
 
   async register(dto: RegisterDto): Promise<AuthResponse> {
@@ -89,6 +109,12 @@ export class AuthService {
     });
     if (existing) {
       throw new ConflictException('用户名已存在');
+    }
+
+    // 仅白名单模式下关闭注册（防止绕过白名单准入）
+    const settings = await this.prisma.siteSettings.findFirst();
+    if (settings?.allowlistOnly) {
+      throw new ForbiddenException('网站当前仅允许白名单用户访问，暂不开放注册');
     }
 
     // 手机号唯一性校验

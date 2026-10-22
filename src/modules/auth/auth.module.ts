@@ -9,6 +9,6 @@ import { PrismaModule } from '../../prisma/prisma.module';
   imports: [PrismaModule],
   controllers: [AuthController],
   providers: [AuthService, CaptchaService, EmailCodeService],
-  exports: [AuthService],
+  exports: [AuthService, EmailCodeService],
 })
 export class AuthModule {}

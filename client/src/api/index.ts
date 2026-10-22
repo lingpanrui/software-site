@@ -43,6 +43,8 @@ const logger = {
 export * as authApi from './auth';
 export * as softwareApi from './software';
 export * as siteSettingsApi from './site-settings';
+export * as feedbackApi from './feedback';
+export * as adminUsersApi from './admin-users';
 
 export { request, logger };
 export { getToken, setToken, clearToken } from './token';

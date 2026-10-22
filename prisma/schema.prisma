@@ -14,10 +14,22 @@ model AppUser {
   email        String?  @unique
   passwordHash String
   role         String   @default("user")
+  blacklisted  Boolean  @default(false)
+  whitelisted  Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   @@map("app_users")
+}
+
+model Feedback {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type      String   @default("反馈")
+  content   String
+  contact   String   @default("")
+  createdAt DateTime @default(now())
+
+  @@map("feedback")
 }
 
 model Software {
@@ -39,11 +51,12 @@ model Software {
 }
 
 model SiteSettings {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  siteName  String   @default("软件资源站")
-  siteUrl   String   @default("")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  siteName      String   @default("软件资源站")
+  siteUrl       String   @default("")
+  allowlistOnly Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@map("site_settings")
 }

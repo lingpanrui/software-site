@@ -100,11 +100,46 @@ export interface UpdateSoftwareRequest {
 export interface SiteSettings {
   siteName: string;
   siteUrl: string;
+  allowlistOnly: boolean;
 }
 
 export interface UpdateSiteSettingsRequest {
   siteName: string;
   siteUrl: string;
+  allowlistOnly?: boolean;
+}
+
+export interface FeedbackRequest {
+  type: '投诉' | '反馈' | '建议';
+  content: string;
+  contact?: string;
+}
+
+export interface FeedbackItem {
+  id: string;
+  type: string;
+  content: string;
+  contact: string;
+  createdAt: string;
+}
+
+export interface AdminUserItem {
+  id: string;
+  username: string;
+  role: string;
+  blacklisted: boolean;
+  whitelisted: boolean;
+  createdAt: string;
+}
+
+export interface AdminUserListResponse {
+  items: AdminUserItem[];
+  total: number;
+}
+
+export interface UpdateUserListRequest {
+  blacklisted?: boolean;
+  whitelisted?: boolean;
 }
 
 export interface UploadResponse {

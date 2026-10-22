@@ -1,6 +1,6 @@
 import { Outlet, Link, NavLink, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { Package, Search, Settings, LogIn, LogOut, UserPlus, LayoutDashboard } from 'lucide-react';
+import { Package, Search, Settings, LogIn, LogOut, UserPlus, LayoutDashboard, MessageSquareText, Users } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +12,7 @@ import type { SiteSettings } from '@/types/api';
 const Layout = () => {
   const { user, isAdmin, isLoggedIn, logout } = useAuth();
   const navigate = useNavigate();
-  const [siteSettings, setSiteSettings] = useState<SiteSettings>({ siteName: '软件资源站', siteUrl: '' });
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>({ siteName: '软件资源站', siteUrl: '', allowlistOnly: false });
   const [searchKeyword, setSearchKeyword] = useState('');
 
   useEffect(() => {
@@ -58,6 +58,14 @@ const Layout = () => {
           </form>
 
           <nav className="flex items-center gap-2">
+            <NavLink to="/feedback">
+              {({ isActive }) => (
+                <Button variant={isActive ? 'secondary' : 'ghost'} size="sm" aria-label="投诉与反馈">
+                  <MessageSquareText className="w-4 h-4" />
+                  <span className="hidden sm:inline">投诉反馈</span>
+                </Button>
+              )}
+            </NavLink>
             {isLoggedIn ? (
               <>
                 {isAdmin && (
@@ -67,6 +75,14 @@ const Layout = () => {
                         <Button variant={isActive ? 'secondary' : 'ghost'} size="sm">
                           <LayoutDashboard className="w-4 h-4" />
                           <span className="hidden sm:inline">管理后台</span>
+                        </Button>
+                      )}
+                    </NavLink>
+                    <NavLink to="/admin/users">
+                      {({ isActive }) => (
+                        <Button variant={isActive ? 'secondary' : 'ghost'} size="sm" aria-label="用户管理">
+                          <Users className="w-4 h-4" />
+                          <span className="hidden sm:inline">用户管理</span>
                         </Button>
                       )}
                     </NavLink>
