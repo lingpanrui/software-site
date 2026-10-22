@@ -4,6 +4,7 @@ import { Package, Search, Settings, LogIn, LogOut, UserPlus, LayoutDashboard } f
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import DisclaimerGate from './DisclaimerGate';
 import { useAuth } from '../context/AuthContext';
 import { siteSettingsApi } from '../api';
 import type { SiteSettings } from '@/types/api';
@@ -34,6 +35,7 @@ const Layout = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <DisclaimerGate />
       <header className="border-b border-border bg-card sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
           <Link to="/" className="flex items-center gap-2 font-semibold text-lg">
