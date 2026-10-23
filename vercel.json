@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm install --legacy-peer-deps && npx prisma generate && npm run build && cd client && npm install --legacy-peer-deps && npm run build && mkdir -p public && cp -r client/dist/* public/",
+  "buildCommand": "npm install --legacy-peer-deps --include=dev && npm run prisma:generate && npm run build && cd client && npm install --legacy-peer-deps && npm run build && mkdir -p public && cp -r client/dist/* public/",
   "outputDirectory": "public",
   "functions": {
     "api/index.ts": {
