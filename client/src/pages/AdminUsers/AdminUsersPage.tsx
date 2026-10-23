@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, Search, RefreshCw, Ban, UserCheck, ShieldOff, ShieldCheck } from 'lucide-react';
 
@@ -56,7 +56,7 @@ const AdminUsersPage = () => {
     }
   };
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = (e: FormEvent) => {
     e.preventDefault();
     setPage(1);
     fetchUsers();

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Package, Download, Search } from 'lucide-react';
 import { toast } from 'sonner';
@@ -108,7 +108,7 @@ const HomePage = () => {
     updateQuery({ category: categoryValue || null, page: '1' });
   };
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = (e: FormEvent) => {
     e.preventDefault();
     updateQuery({ keyword: searchInput.trim() || null, page: '1' });
   };
@@ -277,7 +277,7 @@ const HomePage = () => {
                     pages.push(...Array.from(nearby).sort((a, b) => a - b));
                   }
 
-                  const items: React.ReactNode[] = [];
+                  const items: ReactNode[] = [];
                   pages.forEach((p, idx) => {
                     if (idx > 0 && pages[idx - 1] !== p - 1) {
                       items.push(

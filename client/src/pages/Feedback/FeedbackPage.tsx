@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Loader2, MessageSquareText, CheckCircle2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,7 @@ const FeedbackPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!content.trim()) {
       toast.error('请输入内容');

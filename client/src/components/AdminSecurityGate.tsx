@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type FormEvent, type ReactNode } from 'react';
 import { ShieldCheck, Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,7 @@ import { toast } from 'sonner';
 const SECURITY_KEY = 'software_site_admin_verified';
 
 interface AdminSecurityGateProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 const AdminSecurityGate = ({ children }: AdminSecurityGateProps) => {
@@ -28,7 +28,7 @@ const AdminSecurityGate = ({ children }: AdminSecurityGateProps) => {
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(!verified);
 
-  const handleVerify = async (e: React.FormEvent) => {
+  const handleVerify = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {

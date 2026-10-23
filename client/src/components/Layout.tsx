@@ -1,5 +1,5 @@
 import { Outlet, Link, NavLink, useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Package, Search, Settings, LogIn, LogOut, UserPlus, LayoutDashboard, MessageSquareText, Users } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,7 @@ const Layout = () => {
     siteSettingsApi.getSiteSettings().then(setSiteSettings).catch(() => {});
   }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = (e: FormEvent) => {
     e.preventDefault();
     if (searchKeyword.trim()) {
       navigate(`/?keyword=${encodeURIComponent(searchKeyword.trim())}`);
